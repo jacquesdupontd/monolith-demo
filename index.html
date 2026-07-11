@@ -27,11 +27,11 @@
     html, body { height: 100%; background: #000; overflow: hidden; }
     body { font-family: 'Helvetica Neue', 'Avenir Next', Futura, sans-serif; color: #fff; }
 
-    /* ---------- LANDING (page de garde MONOLITH) ---------- */
+    /* ---------- LANDING ---------- */
     #splash {
       position: fixed; inset: 0; z-index: 10; background: #000;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      text-align: center; padding: 24px; transition: opacity .6s ease;
+      text-align: center; padding: 24px; transition: opacity .8s ease;
     }
     #garde { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
     #splash h1 {
@@ -41,25 +41,22 @@
       text-shadow: 0 0 70px rgba(255,255,255,.28);
     }
     #start {
-      position: relative; z-index: 2; margin-top: 46px;
+      position: relative; z-index: 2; margin-top: 46px; min-width: 210px;
       background: transparent; border: 1px solid rgba(255,255,255,.35); color: #fff;
       font: 300 13px 'Helvetica Neue', sans-serif; letter-spacing: .5em; text-indent: .5em;
-      padding: 15px 34px; cursor: pointer; transition: border-color .3s, box-shadow .3s;
+      padding: 15px 34px; cursor: pointer; transition: border-color .3s, box-shadow .3s, opacity .5s;
+      white-space: nowrap;
     }
     #start:hover { border-color: #fff; box-shadow: 0 0 34px rgba(255,255,255,.22); }
     #about {
       position: relative; z-index: 2; margin-top: 44px; max-width: 640px;
-      font: 300 15px/1.75 'Helvetica Neue', sans-serif; letter-spacing: .015em;
-      color: rgba(255,255,255,.66);
+      font: 300 15px/1.75 'Helvetica Neue', sans-serif; letter-spacing: .015em; color: rgba(255,255,255,.66);
     }
     #about b { font-weight: 500; color: rgba(255,255,255,.9); letter-spacing: .04em; }
     #credit {
       position: relative; z-index: 2; margin-top: 26px;
-      font: 300 11px 'Helvetica Neue', sans-serif; letter-spacing: .22em; text-transform: uppercase;
-      color: rgba(255,255,255,.36);
+      font: 300 11px 'Helvetica Neue', sans-serif; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.36);
     }
-    #credit a { color: rgba(255,255,255,.5); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.2); }
-    #credit a:hover { color: #fff; }
 
     /* ---------- PLAYER ---------- */
     #stage { position: fixed; inset: 0; z-index: 1; background: #000; display: none; }
@@ -68,9 +65,13 @@
     body.playing { cursor: none; }
     body.playing.ui { cursor: default; }
 
-    /* bouton plein écran — apparaît en bas à droite quand la souris bouge, puis s'efface */
+    /* glitch de fin */
+    #glitch { position: fixed; inset: 0; z-index: 8; display: none; pointer-events: none; background: #000; }
+    #glitch.on { display: block; }
+
+    /* bouton plein écran */
     #fs {
-      position: fixed; right: 22px; bottom: 20px; z-index: 5;
+      position: fixed; right: 22px; bottom: 20px; z-index: 6;
       width: 46px; height: 46px; display: grid; place-items: center;
       background: rgba(0,0,0,.42); border: 1px solid rgba(255,255,255,.28); border-radius: 10px;
       color: #fff; cursor: pointer; opacity: 0; pointer-events: none;
@@ -94,9 +95,7 @@
       the machine composes, cuts and reacts frame by frame. Nothing is pre-rendered or edited.
       This is one raw example.
     </p>
-    <p id="credit">
-      Sound — Stone&nbsp;Giants (Amon&nbsp;Tobin): Metropole (Pienie&nbsp;Remix)
-    </p>
+    <p id="credit">Sound — Stone&nbsp;Giants (Amon&nbsp;Tobin): Metropole (Pienie&nbsp;Remix)</p>
   </div>
 
   <!-- ===== PLAYER ===== -->
@@ -104,6 +103,7 @@
     <video id="vid" playsinline preload="metadata"
            src="https://github.com/jacquesdupontd/monolith-demo/releases/download/v1/metropole.mp4"></video>
   </div>
+  <canvas id="glitch"></canvas>
 
   <!-- bouton plein écran -->
   <button id="fs" title="Fullscreen (Esc to exit)" aria-label="Fullscreen">
@@ -112,67 +112,77 @@
   </button>
 
   <script>
-    /* ---------- particules (identiques à MONOLITH) ---------- */
-    (() => {
-      const sp = document.getElementById('splash');
-      const c = document.getElementById('garde');
-      const x = c.getContext('2d');
-      let W = 0, H = 0;
-      const size = () => { W = c.width = c.clientWidth * devicePixelRatio; H = c.height = c.clientHeight * devicePixelRatio; };
-      size(); addEventListener('resize', size);
-      const P = Array.from({ length: 150 }, () => ({ x: Math.random(), y: Math.random(), z: 0.15 + Math.random() * 0.85, vx: 0, vy: 0 }));
-      let t = 0;
-      const tick = () => {
-        if (sp.style.display === 'none') return;
-        t += 0.004;
-        x.fillStyle = 'rgba(0,0,0,0.16)'; x.fillRect(0, 0, W, H);
-        x.fillStyle = '#fff';
-        for (const p of P) {
-          p.vx += (Math.sin(p.y * 6.3 + t * 2.1) * 0.0007 + Math.cos(p.x * 9.1 + t) * 0.0005) * p.z;
-          p.vy += (Math.cos(p.x * 6.3 - t * 1.6) * 0.0006 - 0.00012) * p.z;
-          p.vx *= 0.955; p.vy *= 0.955;
-          p.x = (p.x + p.vx + 1) % 1; p.y = (p.y + p.vy + 1) % 1;
-          x.globalAlpha = 0.10 + p.z * 0.55;
-          x.beginPath(); x.arc(p.x * W, p.y * H, p.z * p.z * 2.1 * devicePixelRatio, 0, 6.2832); x.fill();
-        }
-        x.globalAlpha = 1;
-        requestAnimationFrame(tick);
-      };
-      tick();
-    })();
+    /* ================= 30 PHRASES (changent à chaque fois que CE visiteur va au bout) ================= */
+    const PHRASES = [
+      'ONE MORE RIDE', 'AGAIN', 'YOU CAME BACK', 'STILL HERE?', "CAN'T LOOK AWAY",
+      'RUN IT BACK', 'DEEPER THIS TIME', 'ONE MORE HIT', 'LOOP ME', 'NO WAY OUT',
+      'FEED THE MACHINE', 'ONCE MORE', 'IT REMEMBERS YOU', 'BACK FOR MORE', 'ROUND TWO',
+      'YOU KNOW YOU WANT TO', 'FALL IN AGAIN', 'STILL WATCHING', 'GIVE IN', 'GO AGAIN',
+      'THE LOOP WANTS YOU', "YOU'VE BEEN HERE BEFORE", 'RESIST NOTHING', 'NEVER ENOUGH', 'HIT REPLAY',
+      'ONE LAST TIME', "DON'T STOP NOW", 'SURRENDER', 'AGAIN? OBVIOUSLY', 'WELCOME BACK'
+    ];
+    // compteur de « rides » terminés, mémorisé par appareil/navigateur (localStorage).
+    const KEY = 'monolith_rides';
+    const getRides = () => parseInt(localStorage.getItem(KEY) || '0', 10) || 0;
+    const startBtn = document.getElementById('start');
+    function refreshButton() {
+      const r = getRides();
+      startBtn.innerHTML = r === 0 ? 'START&nbsp;DEMO' : PHRASES[(r - 1) % PHRASES.length].replace(/ /g, '&nbsp;');
+    }
+    refreshButton();
 
-    /* ---------- lecture ---------- */
+    /* ================= particules (redémarrables) ================= */
+    const gc = document.getElementById('garde'), gx = gc.getContext('2d');
+    let GW = 0, GH = 0, particlesRunning = false;
+    const sizeG = () => { GW = gc.width = gc.clientWidth * devicePixelRatio; GH = gc.height = gc.clientHeight * devicePixelRatio; };
+    sizeG(); addEventListener('resize', sizeG);
+    const PT = Array.from({ length: 150 }, () => ({ x: Math.random(), y: Math.random(), z: 0.15 + Math.random() * 0.85, vx: 0, vy: 0 }));
+    let gt = 0;
+    function pTick() {
+      if (!particlesRunning) return;
+      gt += 0.004;
+      gx.fillStyle = 'rgba(0,0,0,0.16)'; gx.fillRect(0, 0, GW, GH);
+      gx.fillStyle = '#fff';
+      for (const p of PT) {
+        p.vx += (Math.sin(p.y * 6.3 + gt * 2.1) * 0.0007 + Math.cos(p.x * 9.1 + gt) * 0.0005) * p.z;
+        p.vy += (Math.cos(p.x * 6.3 - gt * 1.6) * 0.0006 - 0.00012) * p.z;
+        p.vx *= 0.955; p.vy *= 0.955;
+        p.x = (p.x + p.vx + 1) % 1; p.y = (p.y + p.vy + 1) % 1;
+        gx.globalAlpha = 0.10 + p.z * 0.55;
+        gx.beginPath(); gx.arc(p.x * GW, p.y * GH, p.z * p.z * 2.1 * devicePixelRatio, 0, 6.2832); gx.fill();
+      }
+      gx.globalAlpha = 1;
+      requestAnimationFrame(pTick);
+    }
+    function startParticles() { if (!particlesRunning) { particlesRunning = true; pTick(); } }
+    startParticles();
+
+    /* ================= lecture ================= */
     const splash = document.getElementById('splash');
     const stage = document.getElementById('stage');
     const vid = document.getElementById('vid');
-    const fs = document.getElementById('fs');
-    const fsIn = document.getElementById('fs-in');
-    const fsOut = document.getElementById('fs-out');
+    const fs = document.getElementById('fs'), fsIn = document.getElementById('fs-in'), fsOut = document.getElementById('fs-out');
+    const glitch = document.getElementById('glitch'), gg = glitch.getContext('2d');
 
-    document.getElementById('start').addEventListener('click', () => {
+    function playFromLanding() {
+      particlesRunning = false;
       splash.style.opacity = '0';
-      setTimeout(() => { splash.style.display = 'none'; }, 600);
+      setTimeout(() => { splash.style.display = 'none'; }, 800);
       stage.classList.add('on');
       document.body.classList.add('playing', 'ui');
+      vid.currentTime = 0;
       vid.play().catch(() => {});
       armHide();
-    });
+    }
+    startBtn.addEventListener('click', playFromLanding);
 
-    /* le bouton plein écran n'apparaît que quand la souris bouge, puis s'efface */
+    /* bouton plein écran : apparaît quand la souris bouge, puis s'efface */
     let hideT = 0;
-    function armHide() {
-      clearTimeout(hideT);
-      hideT = setTimeout(() => { document.body.classList.remove('ui'); }, 2600);
-    }
-    function wake() {
-      if (!stage.classList.contains('on')) return;
-      document.body.classList.add('ui');
-      armHide();
-    }
+    function armHide() { clearTimeout(hideT); hideT = setTimeout(() => document.body.classList.remove('ui'), 2600); }
+    function wake() { if (!stage.classList.contains('on')) return; document.body.classList.add('ui'); armHide(); }
     addEventListener('mousemove', wake);
     addEventListener('touchstart', wake, { passive: true });
 
-    /* plein écran : clic sur le bouton (ou double-clic vidéo). Échap sort (natif). */
     function toggleFs() {
       if (document.fullscreenElement) document.exitFullscreen();
       else (document.documentElement.requestFullscreen ? document.documentElement : document.body).requestFullscreen?.();
@@ -181,12 +191,72 @@
     vid.addEventListener('dblclick', toggleFs);
     document.addEventListener('fullscreenchange', () => {
       const on = !!document.fullscreenElement;
-      fsIn.style.display = on ? 'none' : 'block';
-      fsOut.style.display = on ? 'block' : 'none';
+      fsIn.style.display = on ? 'none' : 'block'; fsOut.style.display = on ? 'block' : 'none';
     });
 
-    /* la vidéo boucle et reste propre */
-    vid.addEventListener('ended', () => { document.body.classList.add('ui'); }); // réaffiche l'UI à la fin
+    /* ================= FIN DE VIDÉO → GLITCH → RETOUR LANDING ================= */
+    vid.addEventListener('ended', runEndGlitch);
+
+    function runEndGlitch() {
+      document.body.classList.remove('ui');
+      glitch.classList.add('on');
+      const W = glitch.width = innerWidth, H = glitch.height = innerHeight;
+      const vw = vid.videoWidth || 1920, vh = vid.videoHeight || 1080;
+      const scale = Math.min(W / vw, H / vh);
+      const dw = vw * scale, dh = vh * scale, ox = (W - dw) / 2, oy = (H - dh) / 2;
+      const DUR = 1250; const t0 = performance.now();
+      const bands = 26;
+      function frame(now) {
+        const p = Math.min(1, (now - t0) / DUR);
+        const inten = Math.sin(Math.min(p, 0.6) / 0.6 * Math.PI * 0.5); // monte vite, tient
+        const decay = p > 0.6 ? 1 - (p - 0.6) / 0.4 : 1;                 // retombe sur la fin
+        const k = inten * decay;
+        gg.fillStyle = '#000'; gg.fillRect(0, 0, W, H);
+        // bandes déplacées horizontalement (tearing / datamosh)
+        for (let i = 0; i < bands; i++) {
+          const sy = vh * i / bands, sh = vh / bands + 1;
+          const dy = oy + dh * i / bands, dhb = dh / bands + 1;
+          const jump = Math.random() < 0.55 * k;
+          const off = jump ? (Math.random() - 0.5) * 220 * k : 0;
+          try { gg.drawImage(vid, 0, sy, vw, sh, ox + off, dy, dw, dhb); } catch (e) {}
+        }
+        // fantôme chromatique (décalage + blend)
+        if (k > 0.12) {
+          gg.globalCompositeOperation = 'screen'; gg.globalAlpha = 0.35 * k;
+          const s = 10 * k;
+          try { gg.drawImage(vid, ox - s, oy, dw, dh); gg.drawImage(vid, ox + s, oy, dw, dh); } catch (e) {}
+          gg.globalCompositeOperation = 'source-over'; gg.globalAlpha = 1;
+        }
+        // barres blanches / noires qui claquent
+        for (let n = 0; n < 4; n++) if (Math.random() < 0.4 * k) {
+          gg.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,' + (0.5 * k) + ')' : 'rgba(0,0,0,.9)';
+          gg.fillRect(0, Math.random() * H, W, 1 + Math.random() * 26 * k);
+        }
+        // fondu au noir sur la fin
+        gg.fillStyle = 'rgba(0,0,0,' + (p * p) + ')'; gg.fillRect(0, 0, W, H);
+        if (p < 1) requestAnimationFrame(frame); else backToLanding();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function backToLanding() {
+      // compteur +1 (ce visiteur est allé au bout une fois de plus) → nouvelle phrase
+      try { localStorage.setItem(KEY, String(getRides() + 1)); } catch (e) {}
+      refreshButton();
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      // reset lecteur
+      stage.classList.remove('on');
+      document.body.classList.remove('playing', 'ui');
+      vid.pause(); vid.currentTime = 0;
+      // ré-affiche la landing (fondu depuis le noir du glitch)
+      splash.style.display = 'flex';
+      splash.style.opacity = '0';
+      sizeG(); startParticles();
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        splash.style.opacity = '1';
+        glitch.classList.remove('on'); gg.clearRect(0, 0, glitch.width, glitch.height);
+      }));
+    }
   </script>
 </body>
 </html>
